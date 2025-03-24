@@ -1,4 +1,3 @@
-// pages/index.tsx or app/page.tsx
 import React from "react"
 import { Button } from "@/components/ui/button"  // Adjust the path based on your project structure
 
