@@ -1,23 +1,25 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import TransactionItem from '@/components/TransactionItem'
 import TransactionForm from '@/components/TransactionForm'
 
 export default function Transactions() {
-  // Dummy transaction data
-  const [transactions, setTransactions] = useState([
-    { id: 1, date: '2025-03-20', description: 'Salary', amount: 5000, type: 'income' as const },
-    { id: 2, date: '2025-03-21', description: 'Groceries', amount: 200, type: 'expense' as const },
-    { id: 3, date: '2025-03-22', description: 'Electricity Bill', amount: 150, type: 'expense' as const },
-  ])
+  const [transactions, setTransactions] = useState<any[]>([])
+
+  // Fetch transactions from our API endpoint on component mount
+  useEffect(() => {
+    async function fetchTransactions() {
+      const res = await fetch('/api/transactions')
+      const data = await res.json()
+      setTransactions(data.transactions)
+    }
+    fetchTransactions()
+  }, [])
 
   // Function to add a new transaction
   const addTransaction = (newTx: { date: string; description: string; amount: number; type: 'income' | 'expense' }) => {
-    const newTransaction = {
-      id: Date.now(), // Simple unique id
-      ...newTx,
-    }
+    const newTransaction = { id: Date.now(), ...newTx }
     setTransactions([newTransaction, ...transactions])
   }
 
