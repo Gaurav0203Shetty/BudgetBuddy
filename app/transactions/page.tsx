@@ -7,7 +7,7 @@ import TransactionForm from '@/components/TransactionForm'
 export default function Transactions() {
   const [transactions, setTransactions] = useState<any[]>([])
 
-  // Fetch transactions from our API endpoint on component mount
+  // Fetch transactions from the API when the component mounts
   useEffect(() => {
     async function fetchTransactions() {
       const res = await fetch('/api/transactions')
@@ -17,10 +17,26 @@ export default function Transactions() {
     fetchTransactions()
   }, [])
 
-  // Function to add a new transaction
-  const addTransaction = (newTx: { date: string; description: string; amount: number; type: 'income' | 'expense' }) => {
-    const newTransaction = { id: Date.now(), ...newTx }
-    setTransactions([newTransaction, ...transactions])
+  // Function to add a new transaction using the POST endpoint
+  const addTransaction = async (newTx: {
+    date: string
+    description: string
+    amount: number
+    type: 'income' | 'expense'
+  }) => {
+    const res = await fetch('/api/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // For now, we're using a dummy user ID; later, replace with the authenticated user's ID.
+      body: JSON.stringify({ ...newTx, userId: 'dummy-user-id' }),
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      setTransactions([data.transaction, ...transactions])
+    } else {
+      console.error('Failed to add transaction')
+    }
   }
 
   return (
