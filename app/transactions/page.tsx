@@ -1,21 +1,35 @@
+// app/transactions/page.tsx
 'use client'
 
 import React, { useState, useEffect } from 'react'
 import TransactionItem from '@/components/TransactionItem'
 import TransactionForm from '@/components/TransactionForm'
+import { useSession } from 'next-auth/react'
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<any[]>([])
+  const { data: session } = useSession()
 
-  // Fetch transactions from the API when the component mounts
+  // Fetch transactions from our API endpoint on component mount
   useEffect(() => {
     async function fetchTransactions() {
-      const res = await fetch('/api/transactions')
-      const data = await res.json()
-      setTransactions(data.transactions)
+      try {
+        const res = await fetch('/api/transactions', { credentials: 'include' })
+        if (!res.ok) {
+          const errorText = await res.text()
+          console.error('Failed to fetch transactions:', errorText)
+          return
+        }
+        const data = await res.json()
+        setTransactions(data.transactions)
+      } catch (error) {
+        console.error('Error fetching transactions:', error)
+      }
     }
-    fetchTransactions()
-  }, [])
+    if (session) {
+      fetchTransactions()
+    }
+  }, [session])
 
   // Function to add a new transaction using the POST endpoint
   const addTransaction = async (newTx: {
@@ -24,18 +38,23 @@ export default function Transactions() {
     amount: number
     type: 'income' | 'expense'
   }) => {
-    const res = await fetch('/api/transactions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // For now, we're using a dummy user ID; later, replace with the authenticated user's ID.
-      body: JSON.stringify({ ...newTx, userId: 'dummy-user-id' }),
-    })
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ...newTx }),
+      })
 
-    if (res.ok) {
+      if (!res.ok) {
+        const errorText = await res.text()
+        console.error('Failed to add transaction:', errorText)
+        return
+      }
       const data = await res.json()
       setTransactions([data.transaction, ...transactions])
-    } else {
-      console.error('Failed to add transaction')
+    } catch (error) {
+      console.error('Error adding transaction:', error)
     }
   }
 
