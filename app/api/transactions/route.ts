@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   try {
-    const { date, description, amount, type } = await request.json()
+    const { date, description, amount, type, budgetId } = await request.json()
 
     // Ensure user exists (upsert)
     await prisma.user.upsert({
@@ -44,8 +44,16 @@ export async function POST(request: Request) {
         amount,
         type,
         user: { connect: { id: session.user.id } },
+        budget: budgetId ? { connect: { id: budgetId } } : undefined,
       },
     })
+    if (type === 'expense' && budgetId) {
+        await prisma.budget.update({
+          where: { id: budgetId },
+          data: { spent: { increment: amount } },
+        })
+       }
+
     return NextResponse.json({ transaction }, { status: 201 })
   } catch (error) {
     console.error('Error creating transaction:', error)
