@@ -10,10 +10,29 @@ export async function GET(request: Request) {
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  // Parse query params from the URL
+  const { searchParams } = new URL(request.url)
+  const start = searchParams.get('start')   // e.g. '2025-04-01'
+  const end   = searchParams.get('end')     // e.g. '2025-04-30'
+  const type  = searchParams.get('type')    // 'income' or 'expense'
+  const budgetId = searchParams.get('budgetId') // budget UUID
+
+  // Build dynamic where clause
+  const where: any = { userId: session.user.id }
+  if (type) where.type = type
+  if (budgetId) where.budgetId = budgetId
+  if (start || end) {
+    where.date = {}
+    if (start) where.date.gte = new Date(start)
+    if (end)   where.date.lte = new Date(end)
+  }
+
   const transactions = await prisma.transaction.findMany({
-    where: { userId: session.user.id },
+    where,
     orderBy: { date: 'desc' },
   })
+
   return NextResponse.json({ transactions })
 }
 

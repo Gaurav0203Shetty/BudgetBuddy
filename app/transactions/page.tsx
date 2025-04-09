@@ -8,14 +8,39 @@ import TransactionForm from '@/components/TransactionForm'
 export default function Transactions() {
   const { data: session } = useSession()
   const [transactions, setTransactions] = useState<any[]>([])
+  const [filters, setFilters] = useState({
+    start: '',
+    end: '',
+    type: '',
+    budgetId: '',
+  })
+  const [budgets, setBudgets] = useState<any[]>([])
 
+  // Load budgets for filter dropdown
   useEffect(() => {
     if (!session) return
-    fetch('/api/transactions', { credentials: 'include' })
+    fetch('/api/budgets', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setBudgets(data.budgets))
+      .catch(console.error)
+  }, [session])
+
+  // Fetch transactions whenever session or filters change
+  useEffect(() => {
+    if (!session) return
+    const params = new URLSearchParams()
+    Object.entries(filters).forEach(([key, val]) => {
+      if (val) params.set(key, val)
+    })
+    fetch(`/api/transactions?${params.toString()}`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => setTransactions(data.transactions))
       .catch(console.error)
-  }, [session])
+  }, [session, filters])
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
 
   const addTransaction = async (newTx: any) => {
     const res = await fetch('/api/transactions', {
@@ -42,31 +67,111 @@ export default function Transactions() {
     }
   }
 
-  const editTransaction = async (tx: any) => {
-    const res = await fetch(`/api/transactions/${tx.id}`, {
+  const editTransaction = async (tx: {
+    id: string
+    date: string
+    description: string
+    amount: number
+    type: 'income' | 'expense'
+    budgetId?: string
+  }) => {
+    // Destructure so we only send the fields your API expects
+    const { id, date, description, amount, type, budgetId } = tx
+  
+    const res = await fetch(`/api/transactions/${id}`, {
       method: 'PUT',
-      credentials:'include',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(tx),
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date, description, amount, type, budgetId }),
     })
+  
     if (res.ok) {
-      setTransactions(transactions.map(t=>t.id===tx.id?{...t,...tx}:t))
+      // Update local state, including the new budgetId
+      setTransactions(transactions.map(t =>
+        t.id === id
+          ? { ...t, date, description, amount, type, budgetId }
+          : t
+      ))
     } else {
       console.error('Failed to update transaction')
     }
   }
   
+  
   return (
     <div className="max-w-4xl mx-auto p-4 bg-white shadow rounded space-y-4">
-      <h1 className="text-3xl font-bold mb-4">Transactions</h1>
-      <TransactionForm onAdd={addTransaction} />
-      <div className="divide-y divide-gray-200">
-      {transactions.map(tx=>(
-        <TransactionItem key={tx.id} {...tx}
-          onDelete={deleteTransaction}
-          onEdit={editTransaction}
+      <h1 className="text-3xl font-bold">Transactions</h1>
+
+      {/* Filter Form */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div className="flex flex-col">
+        <label htmlFor="start" className="text-sm font-medium">Start Date</label>
+        <input
+          id="start"
+          type="date"
+          name="start"
+          value={filters.start}
+          onChange={handleFilterChange}
+          className="mt-1 p-2 border rounded"
+          placeholder="YYYY-MM-DD"
         />
-      ))}
+        </div>
+        <div className="flex flex-col">
+        <label htmlFor="end" className="text-sm font-medium">End Date</label>
+        <input
+          id="end"
+          type="date"
+          name="end"
+          value={filters.end}
+          onChange={handleFilterChange}
+          className="mt-1 p-2 border rounded"
+          placeholder="YYYY-MM-DD"
+        />
+        </div>
+        <div className="flex flex-col">
+        <label htmlFor="type" className="text-sm font-medium">Type</label>
+        <select
+          id="type"
+          name="type"
+          value={filters.type}
+          onChange={handleFilterChange}
+          className="mt-1 p-2 border rounded"
+        >
+        <option value="">All Types</option>
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+        </select>
+        </div>
+        <div className="flex flex-col">
+        <label htmlFor="budgetId" className="text-sm font-medium">Budget</label>
+        <select
+          id="budgetId"
+          name="budgetId"
+          value={filters.budgetId}
+          onChange={handleFilterChange}
+          className="mt-1 p-2 border rounded"
+        >
+        <option value="">All Budgets</option>
+          {budgets.map(b => (
+          <option key={b.id} value={b.id}>{b.name}</option>
+        ))}
+        </select>
+        </div>
+      </div>
+      {/* Filter Button */}
+      {/* Add Transaction Form */}
+      <TransactionForm onAdd={addTransaction} />
+
+      {/* Transactions List */}
+      <div className="divide-y divide-gray-200">
+        {transactions.map(tx => (
+          <TransactionItem
+            key={tx.id}
+            {...tx}
+            onDelete={deleteTransaction}
+            onEdit={editTransaction}
+          />
+        ))}
       </div>
     </div>
   )
