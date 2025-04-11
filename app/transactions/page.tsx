@@ -16,7 +16,7 @@ export default function Transactions() {
   })
   const [budgets, setBudgets] = useState<any[]>([])
 
-  // Load budgets for filter dropdown
+  // Load budgets for filter dropdown and TransactionForm
   useEffect(() => {
     if (!session) return
     fetch('/api/budgets', { credentials: 'include' })
@@ -25,7 +25,7 @@ export default function Transactions() {
       .catch(console.error)
   }, [session])
 
-  // Fetch transactions whenever session or filters change
+  // Fetch transactions when session or filters change
   useEffect(() => {
     if (!session) return
     const params = new URLSearchParams()
@@ -38,20 +38,25 @@ export default function Transactions() {
       .catch(console.error)
   }, [session, filters])
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  const handleFilterChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target
+    setFilters(prev => ({ ...prev, [name]: value }))
   }
 
   const addTransaction = async (newTx: any) => {
     const res = await fetch('/api/transactions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newTx),
     })
     if (res.ok) {
       const { transaction } = await res.json()
       setTransactions([transaction, ...transactions])
+    } else {
+      console.error('Failed to add transaction')
     }
   }
 
@@ -75,90 +80,110 @@ export default function Transactions() {
     type: 'income' | 'expense'
     budgetId?: string
   }) => {
-    // Destructure so we only send the fields your API expects
     const { id, date, description, amount, type, budgetId } = tx
-  
     const res = await fetch(`/api/transactions/${id}`, {
       method: 'PUT',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ date, description, amount, type, budgetId }),
     })
-  
     if (res.ok) {
-      // Update local state, including the new budgetId
       setTransactions(transactions.map(t =>
-        t.id === id
-          ? { ...t, date, description, amount, type, budgetId }
-          : t
+        t.id === id ? { ...t, date, description, amount, type, budgetId } : t
       ))
     } else {
       console.error('Failed to update transaction')
     }
   }
-  
-  
+
+  const downloadCSV = async () => {
+    const params = new URLSearchParams()
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v) params.set(k, v)
+    })
+    const res = await fetch(`/api/transactions/export?${params.toString()}`, {
+      credentials: 'include',
+    })
+    if (!res.ok) {
+      console.error('Failed to download CSV')
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'transactions.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-white shadow rounded space-y-4">
-      <h1 className="text-3xl font-bold">Transactions</h1>
+    <div className="max-w-4xl mx-auto p-4 bg-white shadow rounded space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Transactions</h1>
+        <button
+          onClick={downloadCSV}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          Export CSV
+        </button>
+      </div>
 
       {/* Filter Form */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="flex flex-col">
-        <label htmlFor="start" className="text-sm font-medium">Start Date</label>
-        <input
-          id="start"
-          type="date"
-          name="start"
-          value={filters.start}
-          onChange={handleFilterChange}
-          className="mt-1 p-2 border rounded"
-          placeholder="YYYY-MM-DD"
-        />
+          <label htmlFor="start" className="text-sm font-medium">Start Date</label>
+          <input
+            id="start"
+            type="date"
+            name="start"
+            value={filters.start}
+            onChange={handleFilterChange}
+            className="mt-1 p-2 border rounded"
+          />
         </div>
         <div className="flex flex-col">
-        <label htmlFor="end" className="text-sm font-medium">End Date</label>
-        <input
-          id="end"
-          type="date"
-          name="end"
-          value={filters.end}
-          onChange={handleFilterChange}
-          className="mt-1 p-2 border rounded"
-          placeholder="YYYY-MM-DD"
-        />
+          <label htmlFor="end" className="text-sm font-medium">End Date</label>
+          <input
+            id="end"
+            type="date"
+            name="end"
+            value={filters.end}
+            onChange={handleFilterChange}
+            className="mt-1 p-2 border rounded"
+          />
         </div>
         <div className="flex flex-col">
-        <label htmlFor="type" className="text-sm font-medium">Type</label>
-        <select
-          id="type"
-          name="type"
-          value={filters.type}
-          onChange={handleFilterChange}
-          className="mt-1 p-2 border rounded"
-        >
-        <option value="">All Types</option>
-        <option value="income">Income</option>
-        <option value="expense">Expense</option>
-        </select>
+          <label htmlFor="type" className="text-sm font-medium">Type</label>
+          <select
+            id="type"
+            name="type"
+            value={filters.type}
+            onChange={handleFilterChange}
+            className="mt-1 p-2 border rounded"
+          >
+            <option value="">All Types</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
         </div>
         <div className="flex flex-col">
-        <label htmlFor="budgetId" className="text-sm font-medium">Budget</label>
-        <select
-          id="budgetId"
-          name="budgetId"
-          value={filters.budgetId}
-          onChange={handleFilterChange}
-          className="mt-1 p-2 border rounded"
-        >
-        <option value="">All Budgets</option>
-          {budgets.map(b => (
-          <option key={b.id} value={b.id}>{b.name}</option>
-        ))}
-        </select>
+          <label htmlFor="budgetId" className="text-sm font-medium">Budget</label>
+          <select
+            id="budgetId"
+            name="budgetId"
+            value={filters.budgetId}
+            onChange={handleFilterChange}
+            className="mt-1 p-2 border rounded"
+          >
+            <option value="">All Budgets</option>
+            {budgets.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
         </div>
       </div>
-      {/* Filter Button */}
+
       {/* Add Transaction Form */}
       <TransactionForm onAdd={addTransaction} />
 
