@@ -1,0 +1,222 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+      "title": "BudgetBuddy API",
+      "version": "1.0.0",
+      "description": "Interactive docs for BudgetBuddy endpoints"
+    },
+    "servers": [
+      { "url": "http://localhost:3000/api" }
+    ],
+    "paths": {
+      "/transactions": {
+        "get": {
+          "summary": "List transactions",
+          "parameters": [
+            { "in": "query", "name": "start", "schema": { "type": "string", "format": "date" } },
+            { "in": "query", "name": "end",   "schema": { "type": "string", "format": "date" } },
+            { "in": "query", "name": "type",  "schema": { "type": "string", "enum": ["income","expense"] } },
+            { "in": "query", "name": "budgetId", "schema": { "type": "string" } }
+          ],
+          "responses": {
+            "200": {
+              "description": "A list of transactions",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "transactions": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Transaction" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "summary": "Create a transaction",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransactionInput" }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "The created transaction",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Transaction" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/transactions/export": {
+        "get": {
+          "summary": "Export CSV of filtered transactions",
+          "parameters": [
+            { "in": "query", "name": "start", "schema": { "type": "string", "format": "date" } },
+            { "in": "query", "name": "end",   "schema": { "type": "string", "format": "date" } },
+            { "in": "query", "name": "type",  "schema": { "type": "string" } },
+            { "in": "query", "name": "budgetId", "schema": { "type": "string" } }
+          ],
+          "responses": {
+            "200": {
+              "description": "CSV file",
+              "content": {
+                "text/csv": {
+                  "schema": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/budgets": {
+        "get": {
+          "summary": "List budgets",
+          "responses": {
+            "200": {
+              "description": "A list of budgets",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "budgets": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Budget" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "summary": "Create a budget",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BudgetInput" }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "The created budget",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Budget" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/profile": {
+        "get": {
+          "summary": "Get current user profile",
+          "responses": {
+            "200": {
+              "description": "User profile",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "user": { "$ref": "#/components/schemas/User" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "put": {
+          "summary": "Update user name",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" }
+                  },
+                  "required": ["name"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Updated user",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "Transaction": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" },
+            "description": { "type": "string" },
+            "amount": { "type": "number" },
+            "type": { "type": "string", "enum": ["income","expense"] },
+            "budgetId": { "type": "string", "nullable": true }
+          }
+        },
+        "TransactionInput": {
+          "allOf": [
+            { "$ref": "#/components/schemas/Transaction" },
+            { "required": ["date","description","amount","type"] }
+          ]
+        },
+        "Budget": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "limit": { "type": "number" },
+            "spent": { "type": "number" }
+          }
+        },
+        "BudgetInput": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "limit": { "type": "number" }
+          },
+          "required": ["name","limit"]
+        },
+        "User": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "email": { "type": "string", "nullable": true }
+          }
+        }
+      }
+    }
+  }
+  
