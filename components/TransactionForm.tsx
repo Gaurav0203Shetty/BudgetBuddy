@@ -48,7 +48,6 @@ export default function TransactionForm({ onAdd }: TransactionFormProps) {
       budgetId: type === 'expense' && budgetId ? budgetId : undefined,
     })
 
-    // Reset form
     setDate('')
     setDescription('')
     setAmount('')
@@ -59,8 +58,9 @@ export default function TransactionForm({ onAdd }: TransactionFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-gray-50 rounded shadow">
       <div>
-        <label className="block text-sm font-medium">Date</label>
+        <label htmlFor="date" className="block text-sm font-medium">Date</label>
         <input
+          id="date"
           type="date"
           value={date}
           onChange={e => setDate(e.target.value)}
@@ -68,8 +68,9 @@ export default function TransactionForm({ onAdd }: TransactionFormProps) {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium">Description</label>
+        <label htmlFor="description" className="block text-sm font-medium">Description</label>
         <input
+          id="description"
           type="text"
           value={description}
           onChange={e => setDescription(e.target.value)}
@@ -78,8 +79,9 @@ export default function TransactionForm({ onAdd }: TransactionFormProps) {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium">Amount</label>
+        <label htmlFor="amount" className="block text-sm font-medium">Amount</label>
         <input
+          id="amount"
           type="number"
           value={amount}
           onChange={e => setAmount(e.target.value)}
@@ -88,8 +90,9 @@ export default function TransactionForm({ onAdd }: TransactionFormProps) {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium">Type</label>
+        <label htmlFor="type" className="block text-sm font-medium">Type</label>
         <select
+          id="type"
           value={type}
           onChange={e => setType(e.target.value as 'income' | 'expense')}
           className="mt-1 block w-full p-2 border rounded"
@@ -100,8 +103,9 @@ export default function TransactionForm({ onAdd }: TransactionFormProps) {
       </div>
       {type === 'expense' && budgets.length > 0 && (
         <div>
-          <label className="block text-sm font-medium">Budget Category</label>
+          <label htmlFor="budgetId" className="block text-sm font-medium">Budget Category</label>
           <select
+            id="budgetId"
             value={budgetId}
             onChange={e => setBudgetId(e.target.value)}
             className="mt-1 block w-full p-2 border rounded"
