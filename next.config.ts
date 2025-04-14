@@ -1,7 +1,9 @@
-import type { NextConfig } from "next";
+import { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
+  // Disable React Strict Mode to prevent unsafe‑lifecycle warnings from 3rd‑party libs
+  reactStrictMode: false,
+  // …your other settings
+}
 
-export default nextConfig;
+export default nextConfig
