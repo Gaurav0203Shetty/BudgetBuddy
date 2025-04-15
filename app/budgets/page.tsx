@@ -29,6 +29,18 @@ export default function Budgets() {
     }
   }
 
+  const updateBudget = async (id: string, data: { name: string; limit: number }) => {
+    const res = await fetch(`/api/budgets/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (res.ok) {
+      setBudgets(budgets.map(b => (b.id === id ? { ...b, ...data } : b)))
+    }
+  }
+
   const deleteBudget = async (id: string) => {
     const res = await fetch(`/api/budgets/${id}`, {
       method: 'DELETE',
@@ -39,35 +51,20 @@ export default function Budgets() {
     }
   }
 
-  const updateBudget = async (id: string, data: any) => {
-    const res = await fetch(`/api/budgets/${id}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(data),
-    })
-    if (res.ok) {
-      setBudgets(budgets.map(b => b.id === id ? {...b, ...data} : b))
-    }
-  }
-
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-white dark:bg-gray-800 shadow rounded space-y-6 text-gray-900 dark:text-gray-100">
+    <div className="max-w-4xl mx-auto p-4 space-y-6 bg-white dark:bg-gray-800 rounded shadow text-gray-900 dark:text-gray-100">
       <h1 className="text-3xl font-bold">Budgets</h1>
       <BudgetForm onAdd={addBudget} />
-      {budgets.length > 0 && (
-        <div className="bg-white p-4 rounded shadow">
-          <BudgetChart budgets={budgets} />
-        </div>
-      )}
-      {budgets.map(b => (
-        <BudgetItem
-          key={b.id}
-          {...b}
-          onDelete={deleteBudget}
-          onUpdate={updateBudget}
-        />
-      ))}
+      <div className="space-y-4">
+        {budgets.map(b => (
+          <BudgetItem
+            key={b.id}
+            {...b}
+            onUpdate={updateBudget}
+            onDelete={deleteBudget}
+          />
+        ))}
+      </div>
     </div>
   )
 }

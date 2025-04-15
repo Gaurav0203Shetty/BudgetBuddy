@@ -1,76 +1,78 @@
+// app/dashboard/page.tsx
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import DashboardCard from '@/components/DashboardCard'
 import ExpenseChart from '@/components/ExpenseChart'
 import ExpenseBreakdownChart from '@/components/ExpenseBreakdownChart'
-import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react'
 
 export default function Dashboard() {
-  const [budgets, setBudgets] = useState<{ name: string; spent: number }[]>([])
-  const [summary, setSummary] = useState({ income: 0, expenses: 0 })
+  const { data: session } = useSession()
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [budgets, setBudgets] = useState<any[]>([])
 
   useEffect(() => {
-    // Fetch transactions summary
+    if (!session) return
+
+    // Fetch transactions
     fetch('/api/transactions', { credentials: 'include' })
       .then(res => res.json())
-      .then(data => {
-        const inc = data.transactions
-          .filter((t: any) => t.type === 'income')
-          .reduce((sum: number, t: any) => sum + t.amount, 0)
-        const exp = data.transactions
-          .filter((t: any) => t.type === 'expense')
-          .reduce((sum: number, t: any) => sum + t.amount, 0)
-        setSummary({ income: inc, expenses: exp })
-      })
+      .then(data => setTransactions(data.transactions))
+      .catch(console.error)
 
-    // Fetch budgets with spent
+    // Fetch budgets
     fetch('/api/budgets', { credentials: 'include' })
       .then(res => res.json())
-      .then(data => {
-        // Only include budgets with non-zero spent
-        setBudgets(data.budgets.map((b: any) => ({
-          name: b.name,
-          spent: b.spent,
-        })))
-      })
-  }, [])
+      .then(data => setBudgets(data.budgets))
+      .catch(console.error)
+  }, [session])
 
-  const savings = summary.income - summary.expenses
+  // Compute totals
+  const totalIncome = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0)
+  const totalExpenses = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0)
+  const netSavings = totalIncome - totalExpenses
+
+  // Prepare data for trend chart (e.g. by month)
+  const monthlyTotals = React.useMemo(() => {
+    const months: Record<string, number> = {}
+    transactions.forEach(t => {
+      const m = new Date(t.date).toLocaleString('default', { month: 'short', year: 'numeric' })
+      months[m] = (months[m] || 0) + (t.type === 'expense' ? -t.amount : t.amount)
+    })
+    const labels = Object.keys(months).sort(
+      (a, b) => new Date(a).getTime() - new Date(b).getTime()
+    )
+    const data = labels.map(l => months[l])
+    return { labels, data }
+  }, [transactions])
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-        <DashboardCard
-          title="Total Income"
-          value={`$${summary.income.toFixed(2)}`}
-          icon={<TrendingUp />}
-        />
-        <DashboardCard
-          title="Total Expenses"
-          value={`$${summary.expenses.toFixed(2)}`}
-          icon={<TrendingDown />}
-        />
-        <DashboardCard
-          title="Savings"
-          value={`$${savings.toFixed(2)}`}
-          icon={<DollarSign />}
-        />
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <DashboardCard title="Total Income" value={`$${totalIncome.toFixed(2)}`} />
+        <DashboardCard title="Total Expenses" value={`$${totalExpenses.toFixed(2)}`} />
+        <DashboardCard title="Net Savings" value={`$${netSavings.toFixed(2)}`} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white p-4 shadow rounded">
-          <ExpenseChart
-            labels={['Week 1', 'Week 2', 'Week 3', 'Week 4']}
-            data={[800, 750, 900, 750]}
-          />
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded shadow">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+            Monthly Net Flow
+          </h3>
+          <ExpenseChart labels={monthlyTotals.labels} data={monthlyTotals.data} />
         </div>
-        <div className="bg-white p-4 shadow rounded">
-          {budgets.length > 0 ? (
-            <ExpenseBreakdownChart budgets={budgets} />
-          ) : (
-            <p className="text-center text-gray-500">No budget data to display.</p>
-          )}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded shadow">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+            Expense Breakdown by Budget
+          </h3>
+          <ExpenseBreakdownChart budgets={budgets.map(b => ({ name: b.name, spent: b.spent }))} />
         </div>
       </div>
     </div>

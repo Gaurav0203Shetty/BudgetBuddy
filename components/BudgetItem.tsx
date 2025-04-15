@@ -1,69 +1,72 @@
 'use client'
-import React, { useState } from 'react'
-import { Edit3, Trash2, Check, X } from 'lucide-react'
 
-interface BudgetItemProps {
+import React, { useState } from 'react'
+
+interface Budget {
   id: string
   name: string
   limit: number
   spent: number
-  onDelete: (id: string) => void
   onUpdate: (id: string, data: { name: string; limit: number }) => void
+  onDelete: (id: string) => void
 }
 
-export default function BudgetItem({
-  id, name, limit, spent, onDelete, onUpdate
-}: BudgetItemProps) {
+export default function BudgetItem({ id, name, limit, spent, onUpdate, onDelete }: Budget) {
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ name, limit })
+  const [newName, setNewName] = useState(name)
+  const [newLimit, setNewLimit] = useState(limit)
 
   const save = () => {
-    onUpdate(id, form)
+    onUpdate(id, { name: newName, limit: newLimit })
     setEditing(false)
   }
 
-  const pct = Math.min(100, Math.round((spent / limit) * 100))
-
   return (
-    <div className="p-4 border rounded mb-2">
+    <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded shadow">
       {editing ? (
-        <>
+        <div className="flex-1 space-x-2">
           <input
-            className="w-full p-1 border mb-2"
-            value={form.name}
-            onChange={e => setForm({...form, name: e.target.value})}
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            className="p-1 border rounded text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700"
           />
           <input
             type="number"
-            className="w-full p-1 border mb-2"
-            value={form.limit}
-            onChange={e => setForm({...form, limit: +e.target.value})}
+            value={newLimit}
+            onChange={e => setNewLimit(Number(e.target.value))}
+            className="p-1 border rounded text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700"
           />
-        </>
+        </div>
       ) : (
-        <div className="flex justify-between items-center">
-          <h3 className="font-medium">{name}</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-sm">{pct}%</span>
-            <button onClick={() => setEditing(true)}><Edit3 size={16}/></button>
-            <button onClick={() => onDelete(id)}><Trash2 size={16}/></button>
-          </div>
+        <div className="flex-1">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">{name}</h4>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Spent: ${spent.toFixed(2)} / Limit: ${limit.toFixed(2)}
+          </p>
         </div>
       )}
 
-      {editing ? (
-        <div className="mt-2 flex gap-2">
-          <button onClick={save} className="text-green-600"><Check size={16}/></button>
-          <button onClick={() => setEditing(false)} className="text-gray-600"><X size={16}/></button>
-        </div>
-      ) : (
-        <>
-          <div className="w-full h-2 bg-gray-200 rounded mt-2">
-            <div className="h-full bg-blue-500 rounded" style={{ width: `${pct}%` }} />
-          </div>
-          <p className="text-sm mt-1">${spent.toFixed(2)} / ${limit.toFixed(2)}</p>
-        </>
-      )}
+      <div className="flex space-x-2">
+        {editing ? (
+          <>
+            <button onClick={save} className="px-2 py-1 bg-green-600 text-white rounded">
+              Save
+            </button>
+            <button onClick={() => setEditing(false)} className="px-2 py-1 bg-gray-400 text-white rounded">
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => setEditing(true)} className="px-2 py-1 bg-blue-600 text-white rounded">
+              Edit
+            </button>
+            <button onClick={() => onDelete(id)} className="px-2 py-1 bg-red-600 text-white rounded">
+              Delete
+            </button>
+          </>
+        )}
+      </div>
     </div>
   )
 }
