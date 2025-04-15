@@ -1,47 +1,42 @@
 'use client'
+
 import React, { useState, useEffect } from 'react'
 
 interface Profile {
-  id: string
   name: string
-  email: string
 }
 
 export default function ProfileForm() {
-  const [profile, setProfile] = useState<Profile | null>(null)
   const [name, setName] = useState('')
-  const [status, setStatus] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<{ name?: string; general?: string }>({})
 
+  // Load current profile
   useEffect(() => {
-    async function loadProfile() {
-      try {
-        // Make sure this starts with a slash
-        const res = await fetch('/api/profile', { credentials: 'include' })
-        console.log('Profile fetch status:', res.status, res.statusText)
-        const text = await res.text()
-        if (!res.ok) {
-          console.error('Failed to fetch profile:', text)
-          return
-        }
-        // If we get here, text contains JSON
-        const data = JSON.parse(text)
-        if (!data.user) {
-          console.error('No user data returned')
-          return
-        }
-        setProfile(data.user)
-        setName(data.user.name)
-      } catch (err) {
-        console.error('Error loading profile:', err)
-      }
-    }
-    loadProfile()
+    fetch('/api/profile', { credentials: 'include' })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch profile')
+        return res.json()
+      })
+      .then((data: { user: Profile }) => {
+        setName(data.user.name || '')
+      })
+      .catch(err => setErrors({ general: err.message }))
   }, [])
 
-  const save = async (e: React.FormEvent) => {
+  const validate = () => {
+    const errs: typeof errors = {}
+    if (!name.trim()) errs.name = 'Name cannot be empty'
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!profile) return
-    setStatus('Saving…')
+    setErrors({})
+    if (!validate()) return
+
+    setLoading(true)
     try {
       const res = await fetch('/api/profile', {
         method: 'PUT',
@@ -49,39 +44,71 @@ export default function ProfileForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
       })
-      const text = await res.text()
-      console.log('Profile update status:', res.status, res.statusText, text)
       if (!res.ok) {
-        console.error('Failed to update profile:', text)
-        setStatus('Failed to save')
-        return
+        const text = await res.text()
+        throw new Error(text || 'Failed to update profile')
       }
-      const data = JSON.parse(text)
-      setProfile(data.user)
-      setStatus('Saved!')
-    } catch (err) {
-      console.error('Error updating profile:', err)
-      setStatus('Failed to save')
+      // Optionally show a success message...
+    } catch (err: any) {
+      setErrors({ general: err.message })
+    } finally {
+      setLoading(false)
     }
-    setTimeout(() => setStatus(''), 2000)
   }
 
-  if (!profile) return <p>Loading…</p>
-
   return (
-    <form onSubmit={save} className="max-w-md mx-auto space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="
+        space-y-4 p-6
+        bg-white dark:bg-gray-800
+        rounded shadow
+        text-gray-900 dark:text-gray-100
+      "
+    >
+      {errors.general && (
+        <div className="text-red-600 dark:text-red-400">{errors.general}</div>
+      )}
+
       <div>
-        <label className="block text-sm font-medium">Name</label>
+        <label htmlFor="profile-name" className="block text-sm font-medium">
+          Your Name
+        </label>
         <input
+          id="profile-name"
+          type="text"
           value={name}
           onChange={e => setName(e.target.value)}
-          className="mt-1 w-full p-2 border rounded"
+          disabled={loading}
+          className="
+            mt-1 block w-full p-2
+            bg-gray-50 dark:bg-gray-700
+            border border-gray-300 dark:border-gray-600
+            rounded
+            text-gray-900 dark:text-gray-100
+            placeholder-gray-500 dark:placeholder-gray-400
+          "
+          placeholder="Enter your name"
         />
+        {errors.name && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+            {errors.name}
+          </p>
+        )}
       </div>
-      <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
-        Update Profile
+
+      <button
+        type="submit"
+        disabled={loading}
+        className={`
+          w-full py-3 
+          ${loading ? 'bg-gray-400 dark:bg-gray-600' : 'bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600'} 
+          text-white font-semibold 
+          rounded
+        `}
+      >
+        {loading ? 'Saving…' : 'Update Profile'}
       </button>
-      {status && <p className="text-sm mt-1">{status}</p>}
     </form>
   )
 }
