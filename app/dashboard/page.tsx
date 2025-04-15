@@ -55,9 +55,9 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <DashboardCard title="Total Income" value={`$${totalIncome.toFixed(2)}`} />
-        <DashboardCard title="Total Expenses" value={`$${totalExpenses.toFixed(2)}`} />
-        <DashboardCard title="Net Savings" value={`$${netSavings.toFixed(2)}`} />
+        <DashboardCard title="Total Income" value={`₹${totalIncome.toFixed(2)}`} />
+        <DashboardCard title="Total Expenses" value={`₹${totalExpenses.toFixed(2)}`} />
+        <DashboardCard title="Net Savings" value={`₹${netSavings.toFixed(2)}`} />
       </div>
 
       {/* Charts */}

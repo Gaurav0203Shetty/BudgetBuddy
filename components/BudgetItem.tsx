@@ -41,7 +41,7 @@ export default function BudgetItem({ id, name, limit, spent, onUpdate, onDelete 
         <div className="flex-1">
           <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">{name}</h4>
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            Spent: ${spent.toFixed(2)} / Limit: ${limit.toFixed(2)}
+            Spent: ₹{spent.toFixed(2)} / Limit: ₹{limit.toFixed(2)}
           </p>
         </div>
       )}

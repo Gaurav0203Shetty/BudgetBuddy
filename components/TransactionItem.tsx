@@ -40,7 +40,7 @@ export default function TransactionItem({ id, date, description, amount, type, o
           </>
         ) : (
           <>
-            <span className={`${type==='income'?'text-green-500':'text-red-500'} font-bold`}>{type==='income'?`+$${amount}`:`-$${amount}`}</span>
+            <span className={`{type==='income'?'text-green-500':'text-red-500'} font-bold`}>{type==='income'?`+₹${amount}`:`-₹${amount}`}</span>
             <button onClick={()=>setEditing(true)}><Edit3 size={16}/></button>
             <button onClick={()=>onDelete(id)}><Trash2 size={16}/></button>
           </>
